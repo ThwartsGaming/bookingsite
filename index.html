@@ -1,117 +1,109 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Booking Calendar</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Dynamic Booking Calendar</title>
   <style>
-    body { font-family: Arial, sans-serif; padding: 20px; max-width: 600px; margin: auto; }
-    label, select, input { display: block; margin-bottom: 15px; width: 100%; }
-    .hidden { display: none; }
-    .note { font-size: 0.9em; color: #555; margin-top: -10px; margin-bottom: 20px; }
-    button { padding: 10px 20px; font-size: 16px; cursor: pointer; }
-    .payment-button { margin-top: 20px; }
+    body { font-family: Arial, sans-serif; max-width: 400px; margin: 20px auto; }
+    label { display: block; margin-top: 15px; }
+    select, button { width: 100%; padding: 8px; margin-top: 5px; }
+    .note { margin-top: 15px; font-style: italic; color: #555; }
   </style>
 </head>
 <body>
-  <h1>Book an Appointment</h1>
 
-  <form id="bookingForm" onsubmit="handleSubmit(event)">
-    <label for="name">Full Name</label>
-    <input type="text" id="name" name="name" required />
+<h2>Book an Appointment</h2>
 
-    <label for="email">Email Address</label>
-    <input type="email" id="email" name="email" required />
+<label for="appointmentType">Appointment Type:</label>
+<select id="appointmentType" required>
+  <option value="" disabled selected>Select appointment type</option>
+  <option value="foundations">Foundations (Complimentary 30 min)</option>
+  <option value="thriving">Thriving (5-session package, $1400)</option>
+</select>
 
-    <label for="typeSelect">Appointment Type</label>
-    <select id="typeSelect" name="appointmentType" required>
-      <option value="">-- Select Appointment Type --</option>
-      <option value="Foundations">Foundations (Free 30-minute session)</option>
-      <option value="Thriving">Thriving (Five 90-minute sessions - $1400)</option>
-    </select>
+<label for="dateTime">Select Date & Time:</label>
+<select id="dateTime" required>
+  <option value="" disabled selected>Select a date & time</option>
+</select>
 
-    <div id="timeSection" class="hidden">
-      <label for="timeSelect">Select a Time</label>
-      <select id="timeSelect" name="appointmentTime" required></select>
-      <div class="note">Other appointment times may be available at the practitioner’s discretion.</div>
-    </div>
+<p class="note">
+  * Appointments may be available at other times by discretion.
+</p>
 
-    <div id="thrivingNote" class="hidden">
-      <p><strong>This is a five-session package.</strong> You'll schedule the first session now. Remaining sessions will be coordinated with you directly.</p>
-    </div>
+<button id="submitBtn" disabled>Book Now</button>
 
-    <div id="priceDisplay" class="hidden">
-      <label>Price</label>
-      <input type="text" id="price" readonly />
-    </div>
+<script>
+  const appointmentTypeEl = document.getElementById('appointmentType');
+  const dateTimeEl = document.getElementById('dateTime');
+  const submitBtn = document.getElementById('submitBtn');
 
-    <button type="submit">Submit Booking</button>
-  </form>
+  // Time slots per appointment type
+  const slots = {
+    foundations: ['10:00', '13:00', '16:30'],
+    thriving: ['11:00', '11:30', '12:00', '12:30', '14:30', '15:00', '15:30', '16:00']
+  };
 
-  <div id="paymentSection" class="hidden payment-button">
-    <p><strong>To complete your Thriving booking, please proceed to payment:</strong></p>
-    <a href="#" id="paymentLink" target="_blank">
-      <button>Proceed to Payment</button>
-    </a>
-  </div>
+  // Days of week we accept: Tues (2), Wed (3), Thurs (4)
+  const allowedDays = [2,3,4];
 
-  <script>
-    const appointmentOptions = {
-      Foundations: {
-        price: "Free",
-        times: ["Tuesday 10:00", "Tuesday 13:00", "Tuesday 16:30", 
-                "Wednesday 10:00", "Wednesday 13:00", "Wednesday 16:30", 
-                "Thursday 10:00", "Thursday 13:00", "Thursday 16:30"]
-      },
-      Thriving: {
-        price: "$1400",
-        times: ["Tuesday 11:00", "Tuesday 14:30", 
-                "Wednesday 11:00", "Wednesday 14:30", 
-                "Thursday 11:00", "Thursday 14:30"]
+  // Helper to format date nicely
+  function formatDate(date) {
+    const options = { weekday: 'short', month: 'short', day: 'numeric' };
+    return date.toLocaleDateString(undefined, options);
+  }
+
+  // Clear dateTime options
+  function clearDateTime() {
+    dateTimeEl.innerHTML = '<option value="" disabled selected>Select a date & time</option>';
+    submitBtn.disabled = true;
+  }
+
+  // Generate next 4 weeks of allowed days + time slots
+  function generateSlots(type) {
+    clearDateTime();
+    if (!type) return;
+
+    const now = new Date();
+    // Start from tomorrow to avoid past times today
+    now.setHours(0,0,0,0);
+    now.setDate(now.getDate() + 1);
+
+    for (let dayOffset = 0; dayOffset < 28; dayOffset++) {
+      const checkDate = new Date(now);
+      checkDate.setDate(now.getDate() + dayOffset);
+      const day = checkDate.getDay();
+      if (allowedDays.includes(day)) {
+        const dateStr = formatDate(checkDate);
+        slots[type].forEach(time => {
+          // Combine date + time
+          const optionText = `${dateStr} @ ${time}`;
+          // Use ISO string as value for easier processing later if needed
+          const isoString = new Date(checkDate.toDateString() + ' ' + time).toISOString();
+          const option = document.createElement('option');
+          option.value = isoString;
+          option.textContent = optionText;
+          dateTimeEl.appendChild(option);
+        });
       }
-    };
-
-    const typeSelect = document.getElementById('typeSelect');
-    const timeSection = document.getElementById('timeSection');
-    const timeSelect = document.getElementById('timeSelect');
-    const priceDisplay = document.getElementById('priceDisplay');
-    const priceField = document.getElementById('price');
-    const thrivingNote = document.getElementById('thrivingNote');
-    const paymentSection = document.getElementById('paymentSection');
-    const paymentLink = document.getElementById('paymentLink');
-
-    typeSelect.addEventListener('change', function () {
-      const selectedType = this.value;
-
-      if (!appointmentOptions[selectedType]) {
-        timeSection.classList.add('hidden');
-        priceDisplay.classList.add('hidden');
-        thrivingNote.classList.add('hidden');
-        paymentSection.classList.add('hidden');
-        return;
-      }
-
-      const { price, times } = appointmentOptions[selectedType];
-      timeSelect.innerHTML = times.map(t => `<option value="${t}">${t}</option>`).join('');
-      timeSection.classList.remove('hidden');
-      priceField.value = price;
-      priceDisplay.classList.remove('hidden');
-
-      if (selectedType === "Thriving") {
-        thrivingNote.classList.remove('hidden');
-        paymentSection.classList.remove('hidden');
-        paymentLink.href = "#"; // Placeholder - to be replaced with actual PayPal URL
-      } else {
-        thrivingNote.classList.add('hidden');
-        paymentSection.classList.add('hidden');
-      }
-    });
-
-    function handleSubmit(event) {
-      event.preventDefault();
-      alert("Booking submitted! We’ll be in touch soon.");
     }
-  </script>
+    submitBtn.disabled = false;
+  }
+
+  appointmentTypeEl.addEventListener('change', e => {
+    generateSlots(e.target.value);
+  });
+
+  // Just a simple submit handler to demo:
+  submitBtn.addEventListener('click', () => {
+    if (!appointmentTypeEl.value || !dateTimeEl.value) {
+      alert('Please select appointment type and date/time.');
+      return;
+    }
+    alert(`Booked ${appointmentTypeEl.options[appointmentTypeEl.selectedIndex].text} on ${dateTimeEl.options[dateTimeEl.selectedIndex].text}`);
+  });
+</script>
+
 </body>
 </html>
+
