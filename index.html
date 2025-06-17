@@ -1,0 +1,117 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Booking Calendar</title>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 20px; max-width: 600px; margin: auto; }
+    label, select, input { display: block; margin-bottom: 15px; width: 100%; }
+    .hidden { display: none; }
+    .note { font-size: 0.9em; color: #555; margin-top: -10px; margin-bottom: 20px; }
+    button { padding: 10px 20px; font-size: 16px; cursor: pointer; }
+    .payment-button { margin-top: 20px; }
+  </style>
+</head>
+<body>
+  <h1>Book an Appointment</h1>
+
+  <form id="bookingForm" onsubmit="handleSubmit(event)">
+    <label for="name">Full Name</label>
+    <input type="text" id="name" name="name" required />
+
+    <label for="email">Email Address</label>
+    <input type="email" id="email" name="email" required />
+
+    <label for="typeSelect">Appointment Type</label>
+    <select id="typeSelect" name="appointmentType" required>
+      <option value="">-- Select Appointment Type --</option>
+      <option value="Foundations">Foundations (Free 30-minute session)</option>
+      <option value="Thriving">Thriving (Five 90-minute sessions - $1400)</option>
+    </select>
+
+    <div id="timeSection" class="hidden">
+      <label for="timeSelect">Select a Time</label>
+      <select id="timeSelect" name="appointmentTime" required></select>
+      <div class="note">Other appointment times may be available at the practitioner’s discretion.</div>
+    </div>
+
+    <div id="thrivingNote" class="hidden">
+      <p><strong>This is a five-session package.</strong> You'll schedule the first session now. Remaining sessions will be coordinated with you directly.</p>
+    </div>
+
+    <div id="priceDisplay" class="hidden">
+      <label>Price</label>
+      <input type="text" id="price" readonly />
+    </div>
+
+    <button type="submit">Submit Booking</button>
+  </form>
+
+  <div id="paymentSection" class="hidden payment-button">
+    <p><strong>To complete your Thriving booking, please proceed to payment:</strong></p>
+    <a href="#" id="paymentLink" target="_blank">
+      <button>Proceed to Payment</button>
+    </a>
+  </div>
+
+  <script>
+    const appointmentOptions = {
+      Foundations: {
+        price: "Free",
+        times: ["Tuesday 10:00", "Tuesday 13:00", "Tuesday 16:30", 
+                "Wednesday 10:00", "Wednesday 13:00", "Wednesday 16:30", 
+                "Thursday 10:00", "Thursday 13:00", "Thursday 16:30"]
+      },
+      Thriving: {
+        price: "$1400",
+        times: ["Tuesday 11:00", "Tuesday 14:30", 
+                "Wednesday 11:00", "Wednesday 14:30", 
+                "Thursday 11:00", "Thursday 14:30"]
+      }
+    };
+
+    const typeSelect = document.getElementById('typeSelect');
+    const timeSection = document.getElementById('timeSection');
+    const timeSelect = document.getElementById('timeSelect');
+    const priceDisplay = document.getElementById('priceDisplay');
+    const priceField = document.getElementById('price');
+    const thrivingNote = document.getElementById('thrivingNote');
+    const paymentSection = document.getElementById('paymentSection');
+    const paymentLink = document.getElementById('paymentLink');
+
+    typeSelect.addEventListener('change', function () {
+      const selectedType = this.value;
+
+      if (!appointmentOptions[selectedType]) {
+        timeSection.classList.add('hidden');
+        priceDisplay.classList.add('hidden');
+        thrivingNote.classList.add('hidden');
+        paymentSection.classList.add('hidden');
+        return;
+      }
+
+      const { price, times } = appointmentOptions[selectedType];
+      timeSelect.innerHTML = times.map(t => `<option value="${t}">${t}</option>`).join('');
+      timeSection.classList.remove('hidden');
+      priceField.value = price;
+      priceDisplay.classList.remove('hidden');
+
+      if (selectedType === "Thriving") {
+        thrivingNote.classList.remove('hidden');
+        paymentSection.classList.remove('hidden');
+        paymentLink.href = "#"; // Placeholder - to be replaced with actual PayPal URL
+      } else {
+        thrivingNote.classList.add('hidden');
+        paymentSection.classList.add('hidden');
+      }
+    });
+
+    function handleSubmit(event) {
+      event.preventDefault();
+      alert("Booking submitted! We’ll be in touch soon.");
+    }
+  </script>
+</body>
+</html>
